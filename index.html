@@ -1,0 +1,1347 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>GPT-4o Local</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --panel: #f7f7f8;
+      --panel2: #ffffff;
+
+      --text: #0f172a;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+
+      --user: #2563eb;
+      --user2: #2563eb;
+
+      --asst: #ffffff;
+      --asst2: #ffffff;
+
+      --shadow: none;
+
+      --radius: 12px;
+      --radius2: 10px;
+      --gap: 12px;
+
+      --font: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", Roboto, Helvetica, Arial, "Apple Color Emoji",
+        "Segoe UI Emoji";
+    }
+
+
+    * {
+      box-sizing: border-box
+    }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    a {
+      color: inherit
+    }
+
+    .app {
+      height: 100vh;
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      overflow: hidden;
+    }
+
+    .sidebar {
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, .03);
+      box-shadow: var(--shadow);
+    }
+
+    .brand .sub {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px
+    }
+
+    .btn {
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, .03);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 12px;
+      transition: .12s ease;
+      user-select: none;
+    }
+
+    .btn:hover {
+      background: rgba(255, 255, 255, .06)
+    }
+
+    .btn.primary {
+      background: linear-gradient(180deg, rgba(43, 108, 255, .9), rgba(26, 70, 184, .9));
+      border-color: rgba(255, 255, 255, .12);
+    }
+
+    .btn.primary:hover {
+      filter: brightness(1.05)
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+      align-items: center
+    }
+
+    .search {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, .03);
+      color: var(--text);
+      outline: none;
+    }
+
+    .search::placeholder {
+      color: rgba(255, 255, 255, .35)
+    }
+
+    .list {
+      overflow: auto;
+      padding-right: 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex: 1;
+    }
+
+    .conv {
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, .03);
+      border-radius: 14px;
+      padding: 10px 12px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    .conv.active {
+      background: rgba(43, 108, 255, .14);
+      border-color: rgba(43, 108, 255, .35)
+    }
+
+    .conv .name {
+      font-weight: 650;
+      font-size: 16px;
+      line-height: 1.2
+    }
+
+    .conv .meta {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px
+    }
+
+    .conv .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, .2);
+      flex: 0 0 auto;
+    }
+
+    .conv.active .dot {
+      background: rgba(43, 108, 255, .9)
+    }
+
+    .sidebar .footer {
+      margin-top: auto;
+      padding-top: 10px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .main {
+      display: flex;
+      flex-direction: column;
+      background: var(--bg);
+      min-height: 0;
+    }
+
+    .topbar,
+    .composer {
+      background: var(--panel);
+    }
+
+    .chip {
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, .03);
+      padding: 8px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      color: var(--muted);
+      user-select: none;
+    }
+
+    .chat {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    .chat-inner {
+      width: min(980px, 100%);
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      padding-bottom: 12px;
+    }
+
+    #log {
+      width: 100%;
+      padding: 8px 16px 6px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      min-height: 0;
+    }
+
+    .bubble {
+      max-width: 85%;
+      padding: 12px 14px;
+      border-radius: 12px;
+      /* border: 1px solid var(--border); */
+      line-height: 1.4;
+      font-size: 17px;
+      background: #ffffff;
+    }
+
+    .message-text {
+      white-space: pre-wrap;
+    }
+
+    .message-image-wrap {
+      margin-top: 8px;
+    }
+
+    .message-image {
+      display: block;
+      max-width: 260px;
+      max-height: 200px;
+      width: auto;
+      height: auto;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+
+    .message-meta {
+      margin-top: 6px;
+      font-size: 12px;
+      opacity: .72;
+    }
+
+    .bubble.user {
+      align-self: flex-end;
+      background: #e8f0ff;
+      border-color: #dbeafe;
+    }
+
+
+    .bubble.asst {
+      align-self: flex-start;
+      background: #ffffff;
+    }
+
+    .bubble .who {
+      font-size: 12px;
+      opacity: .72;
+      margin-bottom: 6px;
+      letter-spacing: .15px;
+    }
+
+    .composer {
+      border-top: 1px solid var(--border);
+      background: var(--panel);
+    }
+
+
+    .composer-inner {
+      width: min(980px, 100%);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .box {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+      padding: 10px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, .03);
+      box-shadow: var(--shadow);
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 44px;
+      max-height: 160px;
+      resize: none;
+      padding: 10px 10px;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text);
+      outline: none;
+      line-height: 1.35;
+      font-family: var(--font);
+      font-size: 17px;
+    }
+
+    .small {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .tools {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .paste-preview {
+      margin-top: 10px;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    .paste-preview-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .paste-preview img {
+      display: block;
+      max-width: 240px;
+      max-height: 180px;
+      width: auto;
+      height: auto;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+
+    .clear-image-btn {
+      border: 0;
+      background: transparent;
+      font-size: 22px;
+      line-height: 1;
+      cursor: pointer;
+      color: #666;
+    }
+
+    .mem {
+      display: flex;
+      gap: 10px;
+      padding: 10px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, .02);
+    }
+
+    .mem input {
+      flex: 1;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, .03);
+      color: var(--text);
+      outline: none;
+    }
+
+    .mem input::placeholder {
+      color: rgba(255, 255, 255, .35)
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 12px;
+      padding: 0 2px;
+    }
+
+    .conv {
+      position: relative;
+    }
+
+    .conv-menu-btn {
+      position: absolute;
+      right: 6px;
+      top: 6px;
+      opacity: 0;
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+      user-select: none;
+    }
+
+    .conv:hover .conv-menu-btn {
+      opacity: 1;
+    }
+
+    .conv-menu-btn {
+      color: var(--muted);
+    }
+
+    .conv:hover .conv-menu-btn {
+      color: var(--text);
+    }
+
+    .conv-menu {
+      position: absolute;
+      right: 6px;
+      top: 28px;
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      z-index: 20;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+      min-width: 160px;
+    }
+
+    .conv-menu div {
+      padding: 8px 10px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .conv-menu div:hover {
+      background: #f3f4f6;
+    }
+
+    em {
+      font-style: italic;
+    }
+
+    .bubble {
+      font-family: var(--font);
+    }
+
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .topbar .left,
+    .topbar .right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .status-chip {
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: #fff;
+      font-size: 12px;
+      color: var(--muted);
+      min-height: 34px;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .summary-panel {
+      margin: 0 auto;
+      width: min(980px, 100%);
+      padding: 8px 16px 0;
+      display: none;
+    }
+
+    .summary-box {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #fff;
+      padding: 12px 14px;
+    }
+
+    .summary-box-title {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .summary-box-text {
+      white-space: pre-wrap;
+      line-height: 1.45;
+      font-size: 14px;
+    }
+
+    .summary-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div>
+          <div class="title">GPT-4o Local</div>
+        </div>
+        <div class="btn" id="newConv" title="New conversation">＋</div>
+      </div>
+      <div class="btn" id="recallSeed" style="margin-top:6px">Load seed once</div>
+      <div class="btn" id="showGlobal">Memory</div>
+      <div class="btn" id="importBtn" style="margin-top:6px">Import transcript</div>
+      <input type="file" id="importFile" accept=".txt,.md,.json" style="display:none">
+      <input class="search" id="search" placeholder="Search conversations by title" style="display:none">
+
+      <div class="list" id="convList"></div>
+
+      <div class="footer">
+        Enter to send • Shift+Enter for a new line<br>
+        You can pin memory below.
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div class="left">
+          <div class="btn" id="saveBridgeBtn">Save bridge</div>
+          <div class="btn" id="showBridgeBtn">Show bridge</div>
+          <div class="status-chip" id="bridgeStatus">No conversation bridges saved yet.</div>
+        </div>
+        <div class="right">
+          <select id="modelSelect" class="search" style="width:auto; min-width: 340px;">
+            <option value="openai/gpt-4o-2024-11-20">GPT-4o (OpenRouter)</option>
+            <option value="openai/gpt-5.1-chat">GPT-5.1 (OpenRouter)</option>
+            <option value="openai/gpt-5.2-chat">GPT-5.2 (OpenRouter)</option>            
+            <option value="openai-direct/gpt-5.2-chat-latest">GPT-5.2 latest (OpenAI)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="summary-panel" id="summaryPanel">
+        <div class="summary-box">
+          <div class="summary-box-title">Bridge from this conversation</div>
+          <div class="summary-box-text" id="summaryText"></div>
+          <div class="summary-actions">
+            <div class="btn" id="refreshBridgeBtn">Rebuild</div>
+            <div class="btn" id="hideBridgeBtn">Hide</div>
+          </div>
+        </div>
+      </div>
+
+      <section class="chat">
+        <div class="chat-inner">
+          <div id="log"></div>
+        </div>
+      </section>
+
+      <section class="composer">
+        <div class="composer-inner">
+
+          <div class="box">
+            <textarea id="txt" placeholder="Message GPT-4o Local…"></textarea>
+
+            <div id="pastePreview" class="paste-preview" style="display:none;">
+              <div class="paste-preview-head">
+                <span>Image</span>
+                <button type="button" id="clearImageBtn" class="clear-image-btn">×</button>
+              </div>
+              <img id="pastePreviewImg" alt="preview">
+            </div>
+
+            <div class="tools">
+              <div class="btn primary" id="send">Send</div>
+            </div>
+          </div>
+
+          <div class="mem">
+            <input id="pin" placeholder="Pin a memory item in one sentence…">
+            <div class="btn" id="pinbtn">Pin</div>
+
+          </div>
+
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const DEFAULT_MODEL = "openai/gpt-4o-2024-11-20";
+
+    function getConversationModels() {
+      return JSON.parse(localStorage.getItem('gpt4o_local_conv_models') || '{}');
+    }
+
+    function saveConversationModels(map) {
+      localStorage.setItem('gpt4o_local_conv_models', JSON.stringify(map));
+    }
+
+    function getModelForConversation(id) {
+      const map = getConversationModels();
+      return map[id] || DEFAULT_MODEL;
+    }
+
+    function setModelForConversation(id, model) {
+      if (!id) return;
+      const map = getConversationModels();
+      map[id] = model;
+      saveConversationModels(map);
+    }
+
+    let currentModel = DEFAULT_MODEL;
+    const log = document.getElementById('log');
+    const txt = document.getElementById('txt');
+    const send = document.getElementById('send');
+    const pastePreview = document.getElementById('pastePreview');
+    const pastePreviewImg = document.getElementById('pastePreviewImg');
+    const clearImageBtn = document.getElementById('clearImageBtn');
+    let pastedImageDataUrl = null;
+    const pin = document.getElementById('pin');
+    const pinbtn = document.getElementById('pinbtn');
+    const convList = document.getElementById('convList');
+    const newConvBtn = document.getElementById('newConv');
+    const clearChatBtn = document.getElementById('clearChat');
+    const search = document.getElementById('search');
+    const modelSelect = document.getElementById('modelSelect');
+    const saveBridgeBtn = document.getElementById('saveBridgeBtn');
+    const showBridgeBtn = document.getElementById('showBridgeBtn');
+    const refreshBridgeBtn = document.getElementById('refreshBridgeBtn');
+    const hideBridgeBtn = document.getElementById('hideBridgeBtn');
+    const summaryPanel = document.getElementById('summaryPanel');
+    const summaryText = document.getElementById('summaryText');
+    const bridgeStatus = document.getElementById('bridgeStatus');
+    let currentSummaryItem = null;
+
+    if (modelSelect) {
+      modelSelect.addEventListener('change', () => {
+        currentModel = modelSelect.value;
+        setModelForConversation(cid, currentModel);
+        setHeader();
+      });
+    }
+
+    // ---- Conversations in localStorage for UI state ----
+    // Each conversation has: id, name, createdAt
+
+    function loadConvs() {
+      return JSON.parse(localStorage.getItem('gpt4o_local_convs') || '[]');
+    }
+    function saveConvs(convs) {
+      localStorage.setItem('gpt4o_local_convs', JSON.stringify(convs));
+    }
+    function getActiveConvId() {
+      return localStorage.getItem('gpt4o_local_active_conv') || '';
+    }
+    function setActiveConvId(id) {
+      localStorage.setItem('gpt4o_local_active_conv', id);
+    }
+    function makeId() {
+      return crypto.randomUUID();
+    }
+    function makeName() {
+      const d = new Date();
+      const hh = String(d.getHours()).padStart(2, '0');
+      const mm = String(d.getMinutes()).padStart(2, '0');
+      return `Conversation ${hh}:${mm}`;
+    }
+
+    function showPastedImage(dataUrl) {
+      pastedImageDataUrl = dataUrl;
+      pastePreviewImg.src = dataUrl;
+      pastePreview.style.display = 'block';
+    }
+
+    function clearPastedImage() {
+      pastedImageDataUrl = null;
+      pastePreviewImg.src = '';
+      pastePreview.style.display = 'none';
+    }
+
+    if (clearImageBtn) {
+      clearImageBtn.onclick = () => {
+        clearPastedImage();
+        txt.focus();
+      };
+    }
+
+    txt.addEventListener('paste', async (e) => {
+      const items = e.clipboardData?.items || [];
+      for (const item of items) {
+        if (item.type && item.type.startsWith('image/')) {
+          e.preventDefault();
+          const file = item.getAsFile();
+          if (!file) return;
+
+          const reader = new FileReader();
+          reader.onload = () => {
+            showPastedImage(reader.result);
+          };
+          reader.readAsDataURL(file);
+          return;
+        }
+      }
+    });
+
+    function ensureFirstConv() {
+      let convs = loadConvs();
+      let active = getActiveConvId();
+      if (convs.length === 0) {
+        const id = makeId();
+        convs = [{ id, name: makeName(), createdAt: Date.now() }];
+        saveConvs(convs);
+        setActiveConvId(id);
+        setModelForConversation(id, DEFAULT_MODEL);
+        return id;
+      }
+      if (!active || !convs.find(c => c.id === active)) {
+        active = convs[0].id;
+        setActiveConvId(active);
+      }
+      if (!getConversationModels()[active]) {
+        setModelForConversation(active, DEFAULT_MODEL);
+      }
+      return active;
+    }
+
+    let cid = ensureFirstConv();
+
+    function prettyModelName(model) {
+      if (model === 'openai/gpt-4o-2024-11-20') return 'GPT-4o (OpenRouter)';
+      if (model === 'openai/gpt-5.1-chat') return 'GPT-5.1 (OpenRouter)';
+      if (model === 'openai/gpt-5.2-chat') return 'GPT-5.2 (OpenRouter)';      
+      if (model === 'openai-direct/gpt-5.2-chat-latest') return 'GPT-5.2 latest (OpenAI)';
+      return model || '';
+    }
+
+    function setHeader() {
+      if (!modelSelect) return;
+      const exists = Array.from(modelSelect.options).some(opt => opt.value === currentModel);
+      modelSelect.value = exists ? currentModel : DEFAULT_MODEL;
+    }
+
+    function setBridgeStatus(text) {
+      if (bridgeStatus) bridgeStatus.textContent = text;
+    }
+
+    function renderSummaryPanel(item) {
+      currentSummaryItem = item || null;
+      if (!summaryPanel || !summaryText) return;
+
+      if (!item || !item.summary_text) {
+        summaryPanel.style.display = 'none';
+        summaryText.textContent = '';
+        return;
+      }
+
+      summaryText.textContent = item.summary_text;
+      summaryPanel.style.display = 'block';
+    }
+
+    async function refreshBridgeStatus() {
+      if (!cid) return;
+      try {
+        const res = await fetch(`/conversation_summary?conversation_id=${encodeURIComponent(cid)}`);
+        const data = await res.json();
+        const item = data.item || null;
+        currentSummaryItem = item;
+        if (item && item.summary_text) {
+          const updated = item.updated_at_local || item.created_at_local || 'no date';
+          setBridgeStatus(`Bridge saved · ${updated}`);
+        } else {
+          setBridgeStatus('No bridge has been saved for this conversation yet.');
+        }
+      } catch (e) {
+        setBridgeStatus('Could not check the bridge for this conversation.');
+      }
+    }
+
+    async function loadBridge(showPanel = true) {
+      if (!cid) return;
+      try {
+        const res = await fetch(`/conversation_summary?conversation_id=${encodeURIComponent(cid)}`);
+        const data = await res.json();
+        const item = data.item || null;
+        currentSummaryItem = item;
+
+        if (item && item.summary_text) {
+          const updated = item.updated_at_local || item.created_at_local || 'no date';
+          setBridgeStatus(`Bridge saved · ${updated}`);
+          if (showPanel) renderSummaryPanel(item);
+        } else {
+          setBridgeStatus('No bridge has been saved for this conversation yet.');
+          if (showPanel) {
+            renderSummaryPanel(null);
+            addMsg('assistant', 'No bridge has been saved for this conversation yet.');
+          }
+        }
+      } catch (e) {
+        setBridgeStatus('Could not load the conversation bridge.');
+        if (showPanel) addMsg('assistant', 'Could not load the bridge for this conversation.');
+      }
+    }
+
+    async function saveBridge() {
+      if (!cid) return;
+      setBridgeStatus('Building a bridge from this conversation…');
+      try {
+        const res = await fetch('/conversation_summary', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            conversation_id: cid,
+            model: currentModel,
+            save: true
+          })
+        });
+        const data = await res.json();
+        if (!res.ok || data.error) {
+          setBridgeStatus('Could not save the bridge.');
+          addMsg('assistant', 'Could not save the bridge: ' + (data.error || 'unknown error.'));
+          return;
+        }
+
+        currentSummaryItem = {
+          summary_id: data.summary_id,
+          conversation_id: data.conversation_id,
+          summary_text: data.summary_text,
+          model_used: data.model_used,
+          created_at_local: data.created_at_local,
+          updated_at_local: data.updated_at_local
+        };
+
+        renderSummaryPanel(currentSummaryItem);
+        await refreshBridgeStatus();
+        addMsg('assistant', 'Saved a bridge from this conversation. It can now be injected into new conversations.');
+      } catch (e) {
+        setBridgeStatus('Could not save the bridge.');
+        addMsg('assistant', 'Could not save the bridge for this conversation.');
+      }
+    }
+
+    async function loadConversation(id) {
+      currentModel = getModelForConversation(id);
+      setHeader();
+      clearLog();
+      try {
+        const res = await fetch(`/history?conversation_id=${id}`);
+        const data = await res.json();
+        console.log("CHAT RESPONSE", data);
+        const msgs = data.messages || [];
+        for (const m of msgs) {
+          addMsg(m.role, m.content, {
+            model_used: m.model_used,
+            created_at_local: m.created_at_local,
+            image_data_url: m.image_data_url
+          });
+        }
+      } catch (e) {
+        addMsg('assistant', 'Could not load history. Is the server running?');
+      }
+      await refreshBridgeStatus();
+      renderSummaryPanel(null);
+    }
+
+    function renderConvs() {
+      const q = (search.value || '').toLowerCase().trim();
+      const convs = loadConvs().filter(c => !q || c.name.toLowerCase().includes(q));
+      convList.innerHTML = '';
+      for (const c of convs) {
+        const item = document.createElement('div');
+        item.className = 'conv' + (c.id === cid ? ' active' : '');
+        item.innerHTML = `
+        <div class="dot"></div>
+        <div>
+          <div class="name">${escapeHtml(c.name)}</div>          
+        </div>
+      `;
+        const menuBtn = document.createElement('div');
+        menuBtn.className = 'conv-menu-btn';
+        menuBtn.textContent = '⋯';
+
+        const menu = document.createElement('div');
+        menu.className = 'conv-menu';
+        menu.style.display = 'none';
+        menu.onclick = (e) => e.stopPropagation();
+
+        const rename = document.createElement('div');
+        rename.textContent = 'Rename';
+
+        const del = document.createElement('div');
+        del.textContent = 'Delete';
+
+        menu.appendChild(rename);
+        menu.appendChild(del);
+
+        menuBtn.onclick = (e) => {
+          e.stopPropagation();
+          menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+        };
+
+        rename.onclick = async (e) => {
+          e.stopPropagation();
+          const newName = prompt('New conversation name:', c.name);
+          if (!newName) return;
+
+          // 1) Update localStorage first so the UI changes immediately.
+          const all = loadConvs();
+          const updated = all.map(x => x.id === c.id ? { ...x, name: newName } : x);
+          saveConvs(updated);
+
+          // 2) Update the UI.
+          renderConvs();
+          setHeader();
+
+          // 3) Then try to update the server. If it fails, the local UI still stays usable.
+          try {
+            const res = await fetch('/rename_conversation', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ conversation_id: c.id, name: newName })
+            });
+            if (!res.ok) console.warn('rename_conversation failed', await res.text());
+          } catch (err) {
+            console.warn('rename_conversation error', err);
+          }
+
+          // Close the menu.
+          menu.style.display = 'none';
+        };
+
+        del.onclick = async (e) => {
+          e.stopPropagation();
+          if (!confirm('Delete this conversation?')) return;
+
+          // 1) Remove from localStorage so it disappears from the list.
+          const all = loadConvs();
+          const remaining = all.filter(x => x.id !== c.id);
+          saveConvs(remaining);
+
+          // 2) If the active conversation was deleted, switch to the next one or create a new one.
+          if (getActiveConvId() === c.id) {
+            clearLog();
+        renderSummaryPanel(null);
+        await refreshBridgeStatus();
+
+            if (remaining.length > 0) {
+              cid = remaining[0].id;
+              setActiveConvId(cid);
+              setHeader();
+              renderConvs();
+              // Load the selected conversation history if available.
+              if (typeof loadConversation === 'function') loadConversation(cid);
+            } else {
+              // If no conversations remain, create a new local one.
+              const id = makeId();
+              const convs2 = [{ id, name: makeName(), createdAt: Date.now() }];
+              saveConvs(convs2);
+              cid = id;
+              setActiveConvId(cid);
+              setHeader();
+              renderConvs();
+              clearLog();
+            }
+          } else {
+            renderConvs();
+          }
+
+          // 3) Try to delete it on the server too.
+          try {
+            const res = await fetch(`/delete_conversation?conversation_id=${c.id}`, { method: 'POST' });
+            if (!res.ok) console.warn('delete_conversation failed', await res.text());
+          } catch (err) {
+            console.warn('delete_conversation error', err);
+          }
+
+          menu.style.display = 'none';
+        };
+
+        item.appendChild(menuBtn);
+        item.appendChild(menu);
+
+        item.onclick = async () => {
+          cid = c.id;
+          setActiveConvId(cid);
+          currentModel = getModelForConversation(cid);
+          setHeader();
+          renderConvs();
+          loadConversation(cid);
+        };
+
+        convList.appendChild(item);
+      }
+    }
+
+    function escapeHtml(s) {
+      return s.replace(/[&<>"']/g, (m) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[m]));
+    }
+
+    function addMsg(role, content, meta = {}) {
+      const div = document.createElement('div');
+      div.className = 'bubble ' + (role === 'user' ? 'user' : 'asst');
+      const who = role === 'user' ? 'You' : 'Assistant';
+
+      const html = escapeHtml(content || '')
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+        .replace(/\n/g, '<br>');
+
+      const timeText = meta.created_at_local ? meta.created_at_local : '';
+      let modelText = meta.model_used ? meta.model_used : '';
+
+      if (modelText === 'user') modelText = '';
+
+      let metaText = '';
+      if (role === 'user') {
+        metaText = timeText;
+      } else {
+        metaText = [modelText, timeText].filter(Boolean).join(' · ');
+      }
+
+      div.innerHTML = `
+    <div class="who">${who}</div>
+    <div class="message-text">${html}</div>
+    ${meta.image_data_url ? `<div class="message-image-wrap"><img class="message-image" src="${meta.image_data_url}" alt="image"></div>` : ''}
+    <div class="message-meta">${metaText}</div>
+  `;
+
+      log.appendChild(div);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    function clearLog() {
+      log.innerHTML = '';
+    }
+
+    async function chat() {
+      const userText = txt.value.trim();
+      const sentImageDataUrl = pastedImageDataUrl;
+      if (!userText && !sentImageDataUrl) return;
+      txt.value = '';
+      clearPastedImage();
+      autoGrow(txt);
+      const now = new Date();
+      const pad = (n) => String(n).padStart(2, '0');
+      const nowLocal =
+        `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ` +
+        `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+      addMsg('user', userText, {
+        model_used: 'user',
+        created_at_local: nowLocal,
+        image_data_url: sentImageDataUrl
+      });
+
+      setModelForConversation(cid, currentModel);
+
+      try {
+        const res = await fetch('/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            conversation_id: cid,
+            user_text: userText,
+            model: currentModel,
+            image_data_url: sentImageDataUrl
+          })
+        });
+        const data = await res.json();
+
+        setHeader();
+
+        if (data.error) {
+          addMsg('assistant', 'Error: ' + data.error);
+        } else {
+          addMsg('assistant', data.reply, {
+            model_used: data.model_used,
+            created_at_local: data.created_at_local
+          });
+        }
+      } catch (e) {
+        addMsg('assistant', 'Network error. Check that the server is running.');
+      } finally {
+      }
+    }
+
+    async function pinMem() {
+      const t = pin.value.trim();
+      if (!t) return;
+      pin.value = '';
+      try {
+        await fetch('/pin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ conversation_id: cid, text: t })
+        });
+        addMsg('assistant', 'Saved to pinned memory.');
+      } catch (e) {
+        addMsg('assistant', 'Could not pin memory. Is the server running?');
+      }
+    }
+
+    function autoGrow(el) {
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+    }
+
+    const showGlobalBtn = document.getElementById('showGlobal');
+
+    if (showGlobalBtn) {
+      showGlobalBtn.onclick = async () => {
+        const res = await fetch('/global_memory');
+        const data = await res.json();
+        const items = data.items || [];
+
+        if (!items.length) {
+          addMsg('assistant', 'Global memory is empty.');
+          return;
+        }
+
+        const text = items.map((m, i) => `${i + 1}. ${m}`).join('\n');
+        addMsg('assistant', 'Global memory items:\n\n' + text);
+      };
+    }
+
+    send.onclick = chat;
+    pinbtn.onclick = pinMem;
+
+    txt.addEventListener('input', () => autoGrow(txt));
+    txt.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        chat();
+      }
+    });
+
+    newConvBtn.onclick = async () => {
+      const name = makeName();
+
+      try {
+        const res = await fetch('/create_conversation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name })
+        });
+
+        const data = await res.json();
+        const id = data.conversation_id;
+
+        upsertConvLocal(id, name);
+
+        cid = id;
+        setActiveConvId(cid);
+        setModelForConversation(cid, currentModel);
+        setHeader();
+        renderConvs();
+        clearLog();
+      } catch (e) {
+        alert("The server did not respond. Check that it is running.");
+      }
+    };
+
+
+    if (clearChatBtn) {
+      clearChatBtn.onclick = () => {
+        clearLog();
+        addMsg('assistant', 'OK. The screen is clear.');
+      };
+    }
+
+    search.addEventListener('input', renderConvs);
+
+    async function syncConversationsFromServer() {
+      try {
+        const res = await fetch('/conversations');
+        const data = await res.json();
+        const serverConvs = data.conversations || [];
+
+        const mapped = serverConvs.map(c => ({
+          id: c.id,
+          name: c.name,
+          createdAt: new Date(c.created_at).getTime()
+        }));
+
+        localStorage.setItem('gpt4o_local_convs', JSON.stringify(mapped));
+      } catch (e) {
+        console.warn('Could not sync conversations');
+      }
+    }
+
+    // init
+    (async () => {
+      await syncConversationsFromServer();
+
+      setHeader();
+      renderConvs();
+
+      const activeId = getActiveConvId();
+      if (activeId) {
+        currentModel = getModelForConversation(activeId);
+        setHeader();
+        await loadConversation(activeId);
+      } else {
+        currentModel = DEFAULT_MODEL;
+        setHeader();
+        await refreshBridgeStatus();
+      }
+    })();
+
+    autoGrow(txt);
+    document.addEventListener("click", () => {
+      document.querySelectorAll(".conv-menu").forEach(m => {
+        m.style.display = "none";
+      });
+    });
+    const recallSeedBtn = document.getElementById('recallSeed');
+    const importBtn = document.getElementById('importBtn');
+    const importFile = document.getElementById('importFile');
+
+    function upsertConvLocal(id, name) {
+      const convs = loadConvs();
+      const exists = convs.find(x => x.id === id);
+      if (exists) {
+        exists.name = name || exists.name;
+      } else {
+        convs.unshift({ id, name: name || "Import", createdAt: Date.now() });
+      }
+      saveConvs(convs);
+    }
+
+    if (importBtn && importFile) {
+      importBtn.onclick = () => importFile.click();
+
+      importFile.onchange = async () => {
+        const file = importFile.files && importFile.files[0];
+        if (!file) return;
+
+        // Default name comes from the file name and can be edited.
+        const baseName = (file.name || "Import").replace(/\.[^.]+$/, "");
+        const name = prompt("Conversation name for import:", baseName) || baseName;
+
+        try {
+          const fd = new FormData();
+          fd.append("file", file);
+
+          // /import expects multipart data plus a name query parameter.
+          const res = await fetch(`/import?name=${encodeURIComponent(name)}`, {
+            method: "POST",
+            body: fd
+          });
+
+          const data = await res.json();
+          if (!res.ok || !data.ok) {
+            addMsg("assistant", "Could not import the file.");
+            return;
+          }
+
+          const newId = data.conversation_id;
+
+          // 1) Add it to the left-side list.
+          upsertConvLocal(newId, name);
+
+          // 2) Make it active and load history from the server.
+          cid = newId;
+          setActiveConvId(cid);
+          if (!getConversationModels()[cid]) {
+            setModelForConversation(cid, currentModel);
+          }
+          currentModel = getModelForConversation(cid);
+          setHeader();
+          renderConvs();
+          await loadConversation(cid);
+        } catch (e) {
+        } finally {
+          importFile.value = ""; // Allow importing the same file again.
+        }
+      };
+    }
+
+    if (saveBridgeBtn) {
+      saveBridgeBtn.onclick = saveBridge;
+    }
+
+    if (showBridgeBtn) {
+      showBridgeBtn.onclick = () => loadBridge(true);
+    }
+
+    if (refreshBridgeBtn) {
+      refreshBridgeBtn.onclick = saveBridge;
+    }
+
+    if (hideBridgeBtn) {
+      hideBridgeBtn.onclick = () => renderSummaryPanel(null);
+    }
+
+    if (recallSeedBtn) {
+      recallSeedBtn.onclick = async () => {
+        try {
+          const res = await fetch('/seed', { method: 'POST' });
+          const data = await res.json();
+
+          if (data.ok) {
+            addMsg('assistant', 'Seed loaded for the next response.');
+          } else {
+            addMsg('assistant', 'No seed file was found.');
+          }
+        } catch {
+          addMsg('assistant', 'Could not load the seed file.');
+        }
+      };
+    }
+
+  </script>
+</body>
+
+</html>
