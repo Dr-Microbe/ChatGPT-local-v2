@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Environment files and secrets
+.env
+.env.*
+!.env.example
+
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Runtime memory/export data
+memories/exports/
+memories/working/
+memories/seed/
+memories/pinned/
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
